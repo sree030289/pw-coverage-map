@@ -1,0 +1,7 @@
+node_modules/
+example/coverage-map/
+example/test-results/
+example/playwright-report/
+*.tgz
+.DS_Store
+.claude/

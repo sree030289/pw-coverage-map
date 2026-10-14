@@ -1,0 +1,63 @@
+{
+  "name": "pw-coverage-map",
+  "version": "0.1.0",
+  "description": "See what your Playwright tests cover without running them: suite → test → steps HTML report, API endpoint coverage from OpenAPI, over-coverage and no-assertion detection, diff for PR comments.",
+  "keywords": [
+    "playwright",
+    "test-coverage",
+    "coverage-report",
+    "test-report",
+    "openapi",
+    "api-testing",
+    "e2e",
+    "qa",
+    "test-automation"
+  ],
+  "license": "MIT",
+  "author": "Sreeram Vennapusa",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sree030289/pw-coverage-report.git"
+  },
+  "homepage": "https://github.com/sree030289/pw-coverage-report#readme",
+  "bugs": {
+    "url": "https://github.com/sree030289/pw-coverage-report/issues"
+  },
+  "type": "module",
+  "bin": {
+    "pw-coverage-map": "bin/cli.js"
+  },
+  "main": "src/index.js",
+  "types": "types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin",
+    "src",
+    "types",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.18"
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "example": "cd example && node ../bin/cli.js --openapi openapi.json -f html,json,md,csv",
+    "example:run": "cd example && npx playwright test; node ../bin/cli.js --openapi openapi.json --results test-results/results.json -f html,json,md,csv"
+  },
+  "dependencies": {
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "@playwright/test": ">=1.42.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0"
+  }
+}
