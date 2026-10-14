@@ -17,11 +17,11 @@
   "author": "Sreeram Vennapusa",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sree030289/pw-coverage-report.git"
+    "url": "git+https://github.com/sree030289/pw-coverage-map.git"
   },
-  "homepage": "https://github.com/sree030289/pw-coverage-report#readme",
+  "homepage": "https://github.com/sree030289/pw-coverage-map#readme",
   "bugs": {
-    "url": "https://github.com/sree030289/pw-coverage-report/issues"
+    "url": "https://github.com/sree030289/pw-coverage-map/issues"
   },
   "type": "module",
   "bin": {

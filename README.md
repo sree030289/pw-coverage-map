@@ -145,7 +145,7 @@ console.log(report.totals, report.insights.endpoints.spec.percent);
 ## Try it on the example
 
 ```bash
-git clone https://github.com/sree030289/pw-coverage-report.git && cd pw-coverage-report && npm i
+git clone https://github.com/sree030289/pw-coverage-map.git && cd pw-coverage-map && npm i
 npm run example          # static report for example/
 npm run example:run      # runs the example suite first, then adds the results
 ```
