@@ -181,13 +181,13 @@ ${suite.cases.map(caseHtml).join("\n")}
   const cards = [
     card("Test cases", t.cases, "var(--accent)"),
     ...report.types.map((type) => card(typeLabel(type), t.byType[type], typeColor(type))),
-    card("Suites", t.suites, "#0d9488"),
+    card("Suites", t.suites, "#475467"),
     card("Steps", t.steps, "#16a34a"),
     card("Assertions", t.assertions, "#0891b2"),
     card("Parked", t.parked, "#d97706"),
   ];
   if (report.hasResults) cards.push(card("Passed", t.passed, "#16a34a"), card("Failed", t.failed, "#dc2626"), card("Flaky", t.flaky, "#d97706"));
-  if (endpoints.spec) cards.push(card("API coverage", `${endpoints.spec.percent}%`, "#7c3aed", `${endpoints.spec.covered} of ${endpoints.spec.total} OpenAPI operations`));
+  if (endpoints.spec) cards.push(card("API coverage", `${endpoints.spec.percent}%`, "var(--accent)", `${endpoints.spec.covered} of ${endpoints.spec.total} OpenAPI operations`));
 
   const typeButtons = report.types.length > 1 ? `<div class="seg" role="group" aria-label="Type"><button type="button" data-type="all" aria-pressed="true">All</button>${report.types.map((type) => `<button type="button" data-type="${esc(type)}" aria-pressed="false">${esc(typeLabel(type))}</button>`).join("")}</div>` : "";
   const statusSelect = report.hasResults ? `<select id="status" aria-label="Last run status"><option value="">Any status</option><option value="passed">Passed</option><option value="failed">Failed</option><option value="flaky">Flaky</option><option value="skipped">Skipped</option><option value="notrun">Not run</option></select>` : "";
@@ -205,21 +205,21 @@ ${suite.cases.map(caseHtml).join("\n")}
   :root {
     color-scheme: light;
     --bg: #e9ecf1; --card: #fff; --line: #dde1e8; --muted: #667085; --text: #1d2939; --soft: #f7f8fb; --chip: #eef0f4; --chip-text: #475467;
-    --accent: #4f46e5; --accent-soft: #eceafd; --api: #2563eb; --ui: #9333ea; --other: #0d9488; --input: #c3c9d4; --head: #2f3a52;
+    --accent: #0f766e; --accent-soft: #dff1ee; --api: #2563eb; --ui: #b45309; --other: #4d7c0f; --input: #c3c9d4; --head: #dde6e4; --head-text: #1f3b38;
     --warn-bg: #fff7e0; --warn-text: #7a4b00; --bad-bg: #fdecec; --bad-text: #b42318; --good: #15803d;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       color-scheme: dark;
       --bg: #0f1420; --card: #171d2b; --line: #273042; --muted: #98a2b3; --text: #e4e7ec; --soft: #1c2335; --chip: #242c3e; --chip-text: #c0c7d4;
-      --accent: #8b85f5; --accent-soft: #2a2850; --api: #5b8def; --ui: #b57af0; --other: #2bb3a3; --input: #3a4458; --head: #232b3d;
+      --accent: #3fb8a8; --accent-soft: #15332f; --api: #5b8def; --ui: #f0a54a; --other: #8cc63f; --input: #3a4458; --head: #1d2b2e; --head-text: #cfe3df;
       --warn-bg: #3a2e12; --warn-text: #f5c86b; --bad-bg: #3b1a1a; --bad-text: #f59e9e; --good: #4ade80;
     }
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
     --bg: #0f1420; --card: #171d2b; --line: #273042; --muted: #98a2b3; --text: #e4e7ec; --soft: #1c2335; --chip: #242c3e; --chip-text: #c0c7d4;
-    --accent: #8b85f5; --accent-soft: #2a2850; --api: #5b8def; --ui: #b57af0; --other: #2bb3a3; --input: #3a4458; --head: #232b3d;
+    --accent: #3fb8a8; --accent-soft: #15332f; --api: #5b8def; --ui: #f0a54a; --other: #8cc63f; --input: #3a4458; --head: #1d2b2e; --head-text: #cfe3df;
     --warn-bg: #3a2e12; --warn-text: #f5c86b; --bad-bg: #3b1a1a; --bad-text: #f59e9e; --good: #4ade80;
   }
   * { box-sizing: border-box; }
@@ -227,15 +227,15 @@ ${suite.cases.map(caseHtml).join("\n")}
   body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
   a { color: var(--accent); }
   code { font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-  .banner { background: linear-gradient(120deg, #1e2a4a, #3b3f8f 60%, #5b3fa8); color: #fff; }
+  .banner { background: #134e4a; color: #fff; border-bottom: 3px solid #0f766e; }
   .banner .inner, .page { max-width: 1320px; margin: 0 auto; padding-left: 16px; padding-right: 16px; }
   .banner .inner { padding-top: 24px; padding-bottom: 0; }
   .titlebar { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; }
   h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -.01em; }
-  .sub { color: #c9cef2; margin: 0; }
+  .sub { color: #c7dfdb; margin: 0; }
   #theme { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.25); border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; flex: none; }
   .tabs { display: flex; gap: 4px; margin-top: 18px; }
-  .tabs button { background: transparent; color: #c9cef2; border: 0; border-radius: 8px 8px 0 0; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; }
+  .tabs button { background: transparent; color: #c7dfdb; border: 0; border-radius: 8px 8px 0 0; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; }
   .tabs button[aria-selected=true] { background: var(--bg); color: var(--text); }
   .tabs .count { background: #f59e0b; color: #1d2939; border-radius: 999px; font-size: 11px; padding: 0 7px; margin-left: 6px; }
   .page { padding-top: 20px; padding-bottom: 64px; }
@@ -255,7 +255,7 @@ ${suite.cases.map(caseHtml).join("\n")}
   .btn:hover { border-color: var(--accent); color: var(--accent); }
   #showing { color: var(--muted); margin-left: auto; font-weight: 600; }
   .head, .suite { display: grid; grid-template-columns: 52px 290px minmax(0, 1fr); }
-  .head { font-weight: 600; background: var(--head); color: #fff; border-radius: 10px; margin-bottom: 12px; }
+  .head { font-weight: 600; background: var(--head); color: var(--head-text); border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--line); }
   .head > div { padding: 10px 12px; }
   .head .pair, .case { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); }
   .suite { background: var(--card); border-radius: 10px; margin-bottom: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(16,24,40,.1); border-left: 4px solid var(--tc); }
@@ -295,7 +295,7 @@ ${suite.cases.map(caseHtml).join("\n")}
   .steplist { list-style: none; margin: 8px 0 0; padding: 0; }
   .steplist > li { display: flex; gap: 10px; margin: 0 0 10px calc(var(--depth) * 22px); }
   .kw { flex: none; width: 52px; height: 20px; border-radius: 5px; font-size: 11px; font-weight: 700; text-align: center; line-height: 20px; background: var(--chip); color: var(--chip-text); }
-  .kw-given { background: #e0e7ff; color: #3730a3; } .kw-when { background: #dbeafe; color: #1d4ed8; } .kw-then { background: #dcfce7; color: #15803d; }
+  .kw-given { background: #dff1ee; color: #115e59; } .kw-when { background: #dbeafe; color: #1d4ed8; } .kw-then { background: #dcfce7; color: #15803d; }
   .kw-none { background: transparent; }
   .stext { font-weight: 500; }
   .outside { color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-top: 8px; }
@@ -333,7 +333,7 @@ ${suite.cases.map(caseHtml).join("\n")}
   .code { display: inline-block; font: 600 11px/18px ui-monospace, Menlo, monospace; border-radius: 4px; padding: 0 5px; margin: 0 4px 2px 0; }
   .code.yes { background: #dcfce7; color: #166534; } .code.no { background: var(--bad-bg); color: var(--bad-text); text-decoration: line-through; }
   .method { display: inline-block; min-width: 58px; text-align: center; font: 700 11px/20px ui-monospace, Menlo, monospace; border-radius: 5px; color: #fff; background: #64748b; }
-  .m-get { background: #2563eb; } .m-post { background: #16a34a; } .m-put { background: #c2410c; } .m-patch { background: #9333ea; } .m-delete { background: #dc2626; }
+  .m-get { background: #2563eb; } .m-post { background: #16a34a; } .m-put { background: #c2410c; } .m-patch { background: #0d9488; } .m-delete { background: #dc2626; }
   .bar { height: 10px; background: var(--bad-bg); border-radius: 999px; overflow: hidden; margin: 4px 0 12px; }
   .bar span { display: block; height: 100%; background: var(--good); }
   .warnings { color: var(--muted); font-size: 12px; margin-top: 24px; }
