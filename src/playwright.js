@@ -1,8 +1,9 @@
 // Talks to Playwright: lists tests without running them, and reads JSON run reports.
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { createRequire } from "node:module";
-import { basename, isAbsolute, resolve } from "node:path";
+import { basename, isAbsolute, join, resolve } from "node:path";
 
 function playwrightCli(cwd) {
   const require = createRequire(resolve(cwd, "package.json"));
@@ -16,11 +17,27 @@ function playwrightCli(cwd) {
   throw new Error("Could not find @playwright/test in this project. Run this from your Playwright project folder (npm i -D @playwright/test).");
 }
 
-const parseJson = (text, what) => {
-  const start = text.indexOf("{");
-  if (start < 0) throw new Error(`${what} did not contain JSON output`);
-  return JSON.parse(text.slice(start));
-};
+/**
+ * Finds the JSON report in text that may also contain other output (dotenv tips, console.log of objects...).
+ * Tries each line that starts with "{" until one parses into a Playwright report.
+ */
+export function parseReport(text, what) {
+  try {
+    return JSON.parse(text.trim());
+  } catch {
+    // fall through to searching
+  }
+  for (let i = text.indexOf("{"); i >= 0; i = text.indexOf("{", i + 1)) {
+    if (i > 0 && text[i - 1] !== "\n") continue;
+    try {
+      const report = JSON.parse(text.slice(i));
+      if (report && (report.suites || report.config)) return report;
+    } catch {
+      // not this one
+    }
+  }
+  throw new Error(`Could not read the JSON report from ${what}. Output started with:\n${text.slice(0, 400)}`);
+}
 
 /** Runs `playwright test --list --reporter=json`: no tests run, no globalSetup, no webServer. */
 export function listTests({ cwd, playwrightConfig, projects = [], grep, env = {} }) {
@@ -28,23 +45,34 @@ export function listTests({ cwd, playwrightConfig, projects = [], grep, env = {}
   if (playwrightConfig) args.push("--config", playwrightConfig);
   for (const project of projects) args.push("--project", project);
   if (grep) args.push("--grep", grep);
-  let stdout;
+
+  // Playwright writes the report to a file, so anything the config prints can't get mixed into it.
+  const dir = mkdtempSync(join(tmpdir(), "pw-coverage-map-"));
+  const outFile = join(dir, "list.json");
+  let stdout = "";
+  let failure;
   try {
     stdout = execFileSync(process.execPath, args, {
       cwd,
-      env: { ...process.env, ...env },
+      env: { ...process.env, ...env, PLAYWRIGHT_JSON_OUTPUT_FILE: outFile, PLAYWRIGHT_JSON_OUTPUT_NAME: outFile },
       encoding: "utf8",
       maxBuffer: 256 * 1024 * 1024,
       stdio: ["ignore", "pipe", "pipe"],
     });
   } catch (error) {
-    if (error.stdout?.includes("{")) stdout = error.stdout;
-    else throw new Error(`playwright test --list failed:\n${error.stderr || error.message}`);
+    stdout = error.stdout ?? "";
+    failure = error;
   }
-  return parseJson(stdout, "playwright test --list");
+  try {
+    if (existsSync(outFile)) return parseReport(readFileSync(outFile, "utf8"), "playwright test --list");
+    if (stdout.includes("{")) return parseReport(stdout, "playwright test --list");
+    throw new Error(`playwright test --list failed:\n${failure?.stderr || failure?.message || "no output"}`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
-export const readJson = (file) => parseJson(readFileSync(file, "utf8"), file);
+export const readJson = (file) => parseReport(readFileSync(file, "utf8"), file);
 
 /** Flattens a Playwright JSON report into one entry per spec, with its describe path. */
 export function flattenReport(report) {
