@@ -5,3 +5,4 @@ example/playwright-report/
 *.tgz
 .DS_Store
 .claude/
+drafts/

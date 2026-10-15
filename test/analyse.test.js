@@ -118,3 +118,11 @@ test("finds the path in wrapper calls like api.post(host, path)", () => {
   const [record] = createAnalyser()(join(dir, "w.spec.ts")).tests.values();
   assert.deepEqual(record.calls.map((c) => `${c.method} ${c.path}`), ["POST /v1/orders", "GET /v1/orders/{id}"]);
 });
+
+test("reads the Playwright report even when the config prints logs with braces", async () => {
+  const { parseReport } = await import("../src/playwright.js");
+  const report = { config: { rootDir: "/x" }, suites: [{ title: "a.spec.ts", specs: [] }] };
+  const noisy = `[dotenv@17.2.3] injecting env (2) from .env -- tip: suppress all logs with { quiet: true }\n{ env: 'qa' }\n${JSON.stringify(report, null, 2)}\n`;
+  assert.deepEqual(parseReport(noisy, "test"), report);
+  assert.throws(() => parseReport("{ not json }", "test"), /Could not read the JSON report/);
+});
