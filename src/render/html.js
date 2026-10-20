@@ -254,6 +254,14 @@ ${suite.cases.map(caseHtml).join("\n")}
   .btn { border: 1px solid var(--input); background: var(--card); color: var(--text); border-radius: 8px; padding: 8px 12px; font: inherit; cursor: pointer; }
   .btn:hover { border-color: var(--accent); color: var(--accent); }
   #showing { color: var(--muted); margin-left: auto; font-weight: 600; }
+  .pagesize { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); }
+  .pager { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; margin: 18px 0 8px; }
+  .pager button { min-width: 38px; border: 1px solid var(--input); background: var(--card); color: var(--text); border-radius: 8px; padding: 7px 11px; font: inherit; cursor: pointer; }
+  .pager button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .pager button[aria-current=page] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pager button:disabled { opacity: .45; cursor: default; }
+  .pager .gap { color: var(--muted); padding: 0 2px; }
+  .empty { text-align: center; color: var(--muted); padding: 32px 0; }
   .head, .suite { display: grid; grid-template-columns: 52px 290px minmax(0, 1fr); }
   .head { font-weight: 600; background: var(--head); color: var(--head-text); border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--line); }
   .head > div { padding: 10px 12px; }
@@ -384,12 +392,15 @@ ${suite.cases.map(caseHtml).join("\n")}
       </select>
       <button class="btn" id="expand" type="button">Expand all</button>
       <button class="btn" id="collapse" type="button">Collapse all</button>
+      <label class="pagesize">Per page <select id="pagesize" aria-label="Tests per page"><option value="25">25</option><option value="50">50</option><option value="100">100</option><option value="0">All</option></select></label>
       <span id="showing"></span>
     </div>
     <div class="head"><div>#</div><div>Test suite</div><div class="pair"><div>Test case</div><div>Steps and checks</div></div></div>
     <main id="list">
 ${suitesHtml}
     </main>
+    <p class="empty" id="empty" hidden>No tests match these filters.</p>
+    <nav class="pager" id="pager" aria-label="Test pages"></nav>
   </div>
 
   <div id="insights" role="tabpanel" aria-labelledby="tab-insights" hidden>
@@ -404,27 +415,78 @@ ${sections.join("\n")}
 (() => {
   const $ = (s) => document.querySelector(s);
   const input = $("#q"), flag = $("#flag"), status = $("#status"), showing = $("#showing");
+  const pager = $("#pager"), sizeSelect = $("#pagesize"), list = $("#list"), empty = $("#empty");
   const typeButtons = [...document.querySelectorAll(".seg button")];
   const suites = [...document.querySelectorAll(".suite")];
+  const cases = [...document.querySelectorAll(".case")];
   const total = ${t.cases};
   let type = "all";
+  let page = 0;
+  let matching = cases;
+  let pageSize = 25;
+  try { const saved = localStorage.getItem("pwcm-pagesize"); if (saved !== null) pageSize = Number(saved); } catch {}
+  if (![25, 50, 100, 0].includes(pageSize)) pageSize = 25;
+  sizeSelect.value = String(pageSize);
+
+  const pages = () => (pageSize ? Math.max(1, Math.ceil(matching.length / pageSize)) : 1);
+
+  function filter() {
+    const terms = input.value.toLowerCase().split(/\s+/).filter(Boolean);
+    matching = cases.filter((item) => (type === "all" || item.dataset.type === type)
+      && (!flag.value || item.dataset.flags.split(" ").includes(flag.value))
+      && (!status || !status.value || item.dataset.status === status.value)
+      && terms.every((term) => item.dataset.search.includes(term)));
+  }
+
+  function render() {
+    page = Math.min(page, pages() - 1);
+    const start = pageSize ? page * pageSize : 0;
+    const end = pageSize ? start + pageSize : matching.length;
+    const visible = new Set(matching.slice(start, end));
+    for (const item of cases) item.hidden = !visible.has(item);
+    for (const suite of suites) suite.hidden = ![...suite.querySelectorAll(".case")].some((item) => visible.has(item));
+    empty.hidden = matching.length > 0;
+    const filtered = matching.length === total ? "" : " (" + total + " in total)";
+    showing.textContent = matching.length
+      ? (visible.size === matching.length ? "Showing " + matching.length : "Showing " + (start + 1) + "–" + Math.min(end, matching.length) + " of " + matching.length) + filtered
+      : "Showing 0 of " + total;
+    renderPager();
+  }
+
+  function renderPager() {
+    const count = pages();
+    pager.hidden = count <= 1;
+    if (count <= 1) { pager.innerHTML = ""; return; }
+    const numbers = [...new Set([0, page - 1, page, page + 1, count - 1])].filter((n) => n >= 0 && n < count).sort((a, b) => a - b);
+    const parts = ['<button type="button" data-page="' + (page - 1) + '"' + (page === 0 ? " disabled" : "") + ' aria-label="Previous page">‹ Prev</button>'];
+    numbers.forEach((n, i) => {
+      if (i && n - numbers[i - 1] > 1) parts.push('<span class="gap">…</span>');
+      parts.push('<button type="button" data-page="' + n + '"' + (n === page ? ' aria-current="page"' : "") + ' aria-label="Page ' + (n + 1) + '">' + (n + 1) + "</button>");
+    });
+    parts.push('<button type="button" data-page="' + (page + 1) + '"' + (page === count - 1 ? " disabled" : "") + ' aria-label="Next page">Next ›</button>');
+    pager.innerHTML = parts.join("");
+  }
+
+  pager.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-page]");
+    if (!button || button.disabled) return;
+    page = Number(button.dataset.page);
+    render();
+    list.scrollIntoView({ block: "start" });
+    window.scrollBy(0, -80);
+  });
+  sizeSelect.addEventListener("change", () => {
+    const first = matching[pageSize ? page * pageSize : 0];
+    pageSize = Number(sizeSelect.value);
+    try { localStorage.setItem("pwcm-pagesize", String(pageSize)); } catch {}
+    page = first && pageSize ? Math.floor(matching.indexOf(first) / pageSize) : 0;
+    render();
+  });
 
   function apply() {
-    const terms = input.value.toLowerCase().split(/\\s+/).filter(Boolean);
-    let shown = 0;
-    for (const suite of suites) {
-      let any = false;
-      for (const item of suite.querySelectorAll(".case")) {
-        const ok = (type === "all" || item.dataset.type === type)
-          && (!flag.value || item.dataset.flags.split(" ").includes(flag.value))
-          && (!status || !status.value || item.dataset.status === status.value)
-          && terms.every((term) => item.dataset.search.includes(term));
-        item.hidden = !ok;
-        if (ok) { any = true; shown += 1; }
-      }
-      suite.hidden = !any;
-    }
-    showing.textContent = "Showing " + shown + " of " + total;
+    filter();
+    page = 0;
+    render();
   }
   input.addEventListener("input", apply);
   flag.addEventListener("change", apply);
@@ -459,11 +521,13 @@ ${sections.join("\n")}
     const target = hash && document.getElementById(hash);
     if (!target || !target.classList.contains("case")) return;
     showTab("tests");
-    if (target.hidden) {
+    if (!matching.includes(target)) {
       input.value = ""; flag.value = ""; if (status) status.value = "";
       type = "all"; typeButtons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.type === "all")));
-      apply();
+      filter();
     }
+    if (pageSize) page = Math.floor(matching.indexOf(target) / pageSize);
+    render();
     const details = target.querySelector("details");
     if (details) details.open = true;
     target.scrollIntoView({ block: "center" });

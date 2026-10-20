@@ -126,3 +126,25 @@ test("reads the Playwright report even when the config prints logs with braces",
   assert.deepEqual(parseReport(noisy, "test"), report);
   assert.throws(() => parseReport("{ not json }", "test"), /Could not read the JSON report/);
 });
+
+test("recognises custom test functions from test.extend()", () => {
+  const dir = project({
+    "x.spec.ts": `
+      import { apiTest, uiTest } from "./fixtures";
+      apiTest("by line", async ({ request }) => {
+        await apiTest.step("a step", async () => {});
+      });
+      uiTest.describe("group", () => {
+        uiTest("by usage", async ({ page }) => {
+          await uiTest.step("another step", async () => {});
+          uiTest.fixme(true, "later");
+        });
+      });`,
+  });
+  // apiTest is only known from the line Playwright reports; uiTest from its .describe/.step usage
+  const { tests } = createAnalyser()(join(dir, "x.spec.ts"), [3]);
+  const [first, second] = [...tests.values()];
+  assert.deepEqual(first.steps.map((s) => s.title), ["a step"]);
+  assert.deepEqual(second.steps.map((s) => s.title), ["another step"]);
+  assert.deepEqual(second.parked, { kind: "fixme", reason: "later" });
+});

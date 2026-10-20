@@ -31,7 +31,7 @@ npx pw-coverage-map
 
 ![Insights tab](docs/insights.png)
 
-The HTML report has dark mode, works on phones, prints cleanly and links each test to its line on GitHub, GitLab or Bitbucket (detected from your git remote).
+The HTML report pages through large suites (25/50/100/all per page), has dark mode, works on phones, prints cleanly and links each test to its line on GitHub, GitLab or Bitbucket (detected from your git remote).
 
 ## Install
 
@@ -128,7 +128,7 @@ npx pw-coverage-map diff /tmp/before.json --out changes.md
 ## How it works
 
 1. `playwright test --list --reporter=json` gives the real list of tests: titles (loops expanded), tags, projects, files and lines. Nothing runs: no `globalSetup`, no `webServer`, no browsers.
-2. Each spec is parsed with the TypeScript compiler API. Each listed test is matched to its `test()` call by line, and the tool collects its steps, `expect` chains, HTTP calls, `page.goto`s, `beforeEach` hooks and `skip/fixme` reasons. Relative imports are followed (3 levels) to discover API client methods.
+2. Each spec is parsed with the TypeScript compiler API. Custom test functions made with `test.extend()` (`apiTest`, `testAPI`, …) are recognised automatically from the lines Playwright reports. Each listed test is matched to its `test()` call by line, and the tool collects its steps, `expect` chains, HTTP calls, `page.goto`s, `beforeEach` hooks and `skip/fixme` reasons. Relative imports are followed (3 levels) to discover API client methods.
 3. `${placeholders}` in step titles are filled from the values in the real test title and from literal constants, using a small safe evaluator (no `eval`).
 
 **Limits** (it's static analysis): steps written inside page-object or helper methods are not followed into, a loop *inside* a single test shows as one step with `‹name›`, and values only known at run time stay as placeholders.
