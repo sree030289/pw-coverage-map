@@ -190,10 +190,46 @@ export function createAnalyser(options = {}) {
     return { kind: "api", method, path };
   }
 
+  // ------------------------------------------------------------ test function names
+  // Default names plus any custom ones: functions called on lines where Playwright found a test,
+  // and identifiers used like a test object (`apiTest.step`, `apiTest.describe`, ...).
+  function testFunctionNames(sf, testLines) {
+    const found = new Set(testNames);
+    const lines = new Set(testLines ?? []);
+    const rootOf = (callee) => {
+      let node = callee;
+      while (ts.isPropertyAccessExpression(node)) node = node.expression;
+      return ts.isIdentifier(node) ? node.text : null;
+    };
+    const walk = (node) => {
+      if (ts.isCallExpression(node)) {
+        const callee = node.expression;
+        if (lines.size && isStringish(node.arguments[0]) && node.arguments.some(isFunction)) {
+          const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
+          const root = rootOf(callee);
+          if (lines.has(line) && root) found.add(root);
+        }
+        if (ts.isPropertyAccessExpression(callee) && ["step", "describe", "beforeEach", "afterEach", "beforeAll", "afterAll"].includes(callee.name.text)) {
+          const root = rootOf(callee.expression);
+          if (root && root !== "expect" && node.arguments.some(isFunction)) found.add(root);
+        }
+      }
+      ts.forEachChild(node, walk);
+    };
+    walk(sf);
+    return found;
+  }
+
   // ------------------------------------------------------------ spec analysis
-  function analyse(file) {
+  /**
+   * @param {string} file
+   * @param {Iterable<number>} [testLines] lines where Playwright found tests in this file. Whatever
+   *   function is called on those lines is a test function (e.g. `testAPI` from `base.extend()`).
+   */
+  function analyse(file, testLines) {
     if (fileCache.has(file)) return fileCache.get(file);
     const sf = parse(file);
+    const names = testFunctionNames(sf, testLines);
     const clients = { ...discoverClients(file), ...configuredClients };
     const constants = {};
     const tests = new Map();
@@ -204,7 +240,7 @@ export function createAnalyser(options = {}) {
         if (ts.isCallExpression(node)) {
           const callee = node.expression;
           // test.step("title", fn)
-          if (ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression) && testNames.has(callee.expression.text)) {
+          if (ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression) && names.has(callee.expression.text)) {
             const method = callee.name.text;
             if (method === "step") {
               const fn = node.arguments.find(isFunction);
@@ -283,7 +319,7 @@ export function createAnalyser(options = {}) {
         const callee = node.expression;
         const root = ts.isIdentifier(callee) ? callee : ts.isPropertyAccessExpression(callee) ? callee.expression : null;
         const method = ts.isPropertyAccessExpression(callee) ? callee.name.text : null;
-        const rootIsTest = root && ts.isIdentifier(root) && testNames.has(root.text);
+        const rootIsTest = root && ts.isIdentifier(root) && names.has(root.text);
         const describeRoot = ts.isPropertyAccessExpression(callee) && (callee.name.text === "describe" || (ts.isPropertyAccessExpression(callee.expression) && callee.expression.name.text === "describe"));
 
         if (describeRoot) {

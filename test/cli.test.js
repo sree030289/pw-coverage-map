@@ -19,14 +19,20 @@ test("builds html, json, md and csv for the example suite", () => {
   const res = run("--list-file", listFile, "--openapi", "openapi.json", "--out", out, "-f", "html,json,md,csv", "--no-source-url");
   assert.equal(res.status, 0, res.stderr);
   const report = JSON.parse(readFileSync(join(out, "coverage.json"), "utf8"));
-  assert.equal(report.totals.cases, 18);
-  assert.deepEqual(report.totals.byType, { api: 14, ui: 4 });
-  assert.equal(report.totals.parked, 2);
+  assert.equal(report.totals.cases, 20);
+  assert.deepEqual(report.totals.byType, { api: 16, ui: 4 });
+  assert.equal(report.totals.parked, 3);
   assert.deepEqual(report.warnings, []);
 
   const byTitle = Object.fromEntries(report.suites.flatMap((s) => s.cases).map((c) => [c.title, c]));
   assert.equal(byTitle["rejects an empty name"].steps[0].title, "When I create a user with an empty name");
   assert.equal(byTitle["accepts a name of exactly 50 characters"].steps[0].title, "When I post a name of 50 characters");
+
+  // tests declared with a fixture-extended `testAPI` instead of `test`
+  const viaFixture = byTitle["creates a user with the users fixture"];
+  assert.deepEqual(viaFixture.steps.map((s) => s.title), ["When I create a user", "Then it gets an id"]);
+  assert.equal(viaFixture.assertions, 2);
+  assert.deepEqual(byTitle["reads a missing user"].parked, { kind: "skip", reason: "Parked until ids are stable" });
 
   const ins = report.insights;
   assert.deepEqual(ins.noAssertions.map((id) => byTitle["ping the users endpoint"].id === id), [true]);
@@ -62,7 +68,7 @@ test("quality gates fail the build", () => {
   assert.equal(res.status, 1);
   assert.match(res.stderr, /without assertions/);
   assert.match(res.stderr, /API coverage 57\.1% is below 90%/);
-  assert.match(res.stderr, /2 parked tests \(max 1\)/);
+  assert.match(res.stderr, /3 parked tests \(max 1\)/);
 });
 
 test("diff lists added, removed and changed tests", () => {
@@ -70,7 +76,8 @@ test("diff lists added, removed and changed tests", () => {
   const after = JSON.parse(readFileSync(join(out, "coverage.json"), "utf8"));
   const before = structuredClone(after);
   before.suites[0].cases.push({ ...before.suites[0].cases[0], title: "old test" });
-  before.suites[1].cases[0].checks = [];
+  const listsUsers = before.suites.flatMap((s) => s.cases).find((c) => c.title === "lists users");
+  listsUsers.checks = [];
   const beforeFile = join(out, "before.json");
   writeFileSync(beforeFile, JSON.stringify(before));
   const res = run("diff", beforeFile, join(out, "coverage.json"));

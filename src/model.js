@@ -58,12 +58,18 @@ export function buildReport({ listReport, runReport, openapi, config }) {
 
   const suites = new Map();
   const warnings = [];
-  for (const spec of flattenReport(listReport)) {
+  const specs = flattenReport(listReport);
+  const linesByFile = new Map();
+  for (const spec of specs) {
+    if (!linesByFile.has(spec.file)) linesByFile.set(spec.file, new Set());
+    linesByFile.get(spec.file).add(spec.line);
+  }
+  for (const spec of specs) {
     const file = toPosix(relative(cwd, spec.file));
     let analysis = { tests: new Map(), constants: {} };
     if (existsSync(spec.file)) {
       try {
-        analysis = analyse(spec.file);
+        analysis = analyse(spec.file, linesByFile.get(spec.file));
       } catch (error) {
         warnings.push(`Could not parse ${file}: ${error.message}`);
       }

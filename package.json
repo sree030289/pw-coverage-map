@@ -1,6 +1,6 @@
 {
   "name": "pw-coverage-map",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "See what your Playwright tests cover without running them: suite → test → steps HTML report, API endpoint coverage from OpenAPI, over-coverage and no-assertion detection, diff for PR comments.",
   "keywords": [
     "playwright",
